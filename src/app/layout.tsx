@@ -1,3 +1,5 @@
+import { Toaster } from "@/components/ui/sonner";
+import { cn } from "@/lib/utils";
 import type { Metadata } from "next";
 import { Inter } from "next/font/google";
 import "./globals.css";
@@ -16,7 +18,10 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>{children}</body>
+      <body className={cn(inter.className, 'w-screen h-svh flex flex-col')}>
+        <main className="grow grid place-items-center">{children}</main>
+        <Toaster />
+      </body>
     </html>
   );
 }
