@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SUBJECTS, TRANSACTION_STATUS } from "@/lib/consts";
 import { BaseSchema, FullSchema, baseSchema, catalogSchema, ordersSchema, paymentsSchema } from "@/lib/schemas";
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { ObjectSchema } from 'yup';
@@ -44,33 +44,14 @@ export default function Home() {
     resolver: yupResolver(schema as ObjectSchema<FullSchema>)
   })
 
-  const resetSpecificFields = () => {
-    const { account_name, requester_email, title, subject, detailing } = getValues()
-
-    setSelectedTransactionStatus(null)
-
-    reset({
-      account_name,
-      requester_email,
-      title,
-      subject,
-      detailing,
-    })
-  }
-
-  useEffect(() => {
-    resetSpecificFields()
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [selectedSubject])
-
   const baseFields = (
     <>
       <div className="grid sm:grid-cols-2 gap-4">
-        <Field label="Account Name" error={errors.account_name?.message} {...register('account_name')} />
-        <Field label="Requester Email" error={errors.requester_email?.message} {...register('requester_email')} />
+        <Field label="Account Name" key="account_name" error={errors.account_name?.message} {...register('account_name')} />
+        <Field label="Requester Email" key="requester_email" error={errors.requester_email?.message} {...register('requester_email')} />
       </div>
-      <Field label="Title" error={errors.title?.message} {...register('title')} />
-      <Field label="Subject" error={errors.subject?.message} asChild>
+      <Field label="Title" error={errors.title?.message} key="title" {...register('title')} />
+      <Field label="Subject" error={errors.subject?.message} key="subject" asChild>
         <Combobox open={subjectOpen} setOpen={setSubjectOpen} label={selectedSubject || "Select..."}>
           <section className="flex flex-col">
             {SUBJECTS.map(el => (
@@ -152,7 +133,7 @@ export default function Home() {
     const body = new FormData()
 
     // add form data to body
-    Object.entries(formData).map(([key, value]) => value && body.append(key, typeof value === 'boolean' ? String(value) : value as string | Blob))
+    Object.entries(formData).map(([key, value]) => value !== undefined && body.append(key, typeof value === 'boolean' ? String(value) : value as string | Blob))
 
     const response = await fetch('/api/ticket', { method: 'POST', body })
 
