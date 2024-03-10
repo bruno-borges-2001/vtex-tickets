@@ -8,86 +8,103 @@ function getContentTypeFromBase64String(string: string) {
   return string.match(REGEX)?.[1] ?? ""
 }
 
+const FIELD_MAPPING = {
+  'account_name': 23668110907291,
+  'requester_email': 23668126579995,
+  'subject': 23668565503003,
+  'order_number': 23668201672475,
+  'is_affecting_all_users': 23668220752667,
+  'transaction_number': 23668204395419,
+  'transaction_status': 23668226104347,
+  'payment_acquirer': 23668226930587,
+  'sku_id': 23668227480603
+} as const
+
 export async function POST(req: NextRequest) {
   try {
-    // const authorization_token = atob(`${ZENDESK_EMAIL}:${ZENDESK_PASSWORD}`)
+    const authorization_token = btoa(`${ZENDESK_EMAIL}:${ZENDESK_PASSWORD}`)
 
     const data = await req.formData()
     const subject = data.get('subject')
 
     let token;
 
-    // if (subject === 'Catalog' && data.has('screenshot')) {
-    //   const screenshot = data.get('screenshot') as string
-    //   const uploadResponse = await fetch(
-    //     `https://${ZENDESK_SUBDOMAIN}.zendesk.com/api/v2/uploads.json?filename=order_issue.png`,
-    //     {
-    //       method: 'POST',
-    //       body: screenshot,
-    //       headers: {
-    //         'Content-Type': getContentTypeFromBase64String(screenshot),
-    //         'Authorization': `Basic ${authorization_token}`,
-    //       }
-    //     }
-    //   )
+    if (subject === 'Catalog' && data.has('screenshot')) {
+      const screenshot = data.get('screenshot') as Blob
+      const uploadResponse = await fetch(
+        `https://${ZENDESK_SUBDOMAIN}.zendesk.com/api/v2/uploads.json?filename=order_issue.png`,
+        {
+          method: 'POST',
+          body: screenshot,
+          headers: {
+            'Content-Type': screenshot.type,
+            'Authorization': `Basic ${authorization_token}`,
+          }
+        }
+      )
 
-    //   const uploadData = await uploadResponse.json()
+      const uploadData = await uploadResponse.json()
 
-    //   if (!uploadResponse.ok) throw new Error(uploadData)
+      if (!uploadResponse.ok) return NextResponse.json(uploadData, { status: uploadResponse.status })
 
-    //   if (!uploadData?.token) throw new Error('Error during upload')
+      if (!uploadData?.upload.token) throw new Error('Error during upload')
 
-    //   token = uploadData.token as string
-    // }
+      token = uploadData.upload.token as string
+    }
 
     const ticket = {
-      subject,
+      subject: data.get('title'),
+      priority: 'normal',
       comment: {
         body: data.get('detailing'),
         uploads: token ? [token] : undefined
       },
-      custom_fields: [] as { [key: string]: unknown }[]
+      custom_fields: [] as { id: number, value: string }[]
     }
 
-    const fields: { [key: string]: unknown } = {
-      account_name: data.get('account_name'),
-      requester_email: data.get('requester_email')
-    }
+    const fields: { id: number, value: any }[] = []
+
+    fields.push({ id: FIELD_MAPPING['account_name'], value: data.get('account_name') })
+    fields.push({ id: FIELD_MAPPING['requester_email'], value: data.get('requester_email') })
+    fields.push({ id: FIELD_MAPPING['subject'], value: data.get('subject')?.toString().toLowerCase() })
+
 
     switch (subject) {
       case 'Orders':
-        fields.order_number = data.get('order_number')
-        fields.is_affecting_all_users = data.get('is_affecting_all_users')?.toString()
+        fields.push({ id: FIELD_MAPPING['order_number'], value: data.get('order_number') })
+        // if (data.get('is_affecting_all_users') === 'true')
+        fields.push({ id: FIELD_MAPPING['is_affecting_all_users'], value: data.get('is_affecting_all_users') })
         break
       case 'Payments':
-        fields.transaction_number = data.get('transaction_number')
-        fields.transaction_status = data.get('transaction_status')
-        fields.payment_acquirer = data.get('payment_acquirer')
+        fields.push({ id: FIELD_MAPPING['transaction_number'], value: data.get('transaction_number') })
+        fields.push({ id: FIELD_MAPPING['transaction_status'], value: data.get('transaction_status')?.toString().toLowerCase().replaceAll(' ', '_') })
+        fields.push({ id: FIELD_MAPPING['payment_acquirer'], value: data.get('payment_acquirer') })
         break
       case 'Catalog':
-        fields.sku_id = data.get('sku_id')
+        fields.push({ id: FIELD_MAPPING['sku_id'], value: data.get('sku_id') })
         break
     }
 
-    ticket.custom_fields[0] = fields
+    ticket.custom_fields = fields
 
-    // const response = await fetch(`https://${ZENDESK_SUBDOMAIN}.zendesk.com/api/v2/tickets`,
-    //   {
-    //     method: 'POST',
-    //     body: JSON.stringify({ ticket }),
-    //     headers: {
-    //       'Content-Type': 'application/json',
-    //       'Authorization': `Basic ${authorization_token}`,
-    //     }
-    //   }
-    // )
+    const response = await fetch(`https://${ZENDESK_SUBDOMAIN}.zendesk.com/api/v2/tickets`,
+      {
+        method: 'POST',
+        body: JSON.stringify({ ticket }),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Basic ${authorization_token}`,
+        }
+      }
+    )
 
-    // const ticketResponse = await response.json()
+    const ticketResponse = await response.json()
 
-    // return NextResponse.json(ticketResponse, { status: 200 })
+    if (!response.ok) return NextResponse.json(ticketResponse, { status: response.status })
 
-    return NextResponse.json({ ...ticket, id: 12345 }, { status: 200 })
-  } catch (err) {
-    return NextResponse.json(err, { status: 400 })
+    return NextResponse.json(ticketResponse, { status: 200 })
+  } catch (err: any) {
+    console.log(err)
+    return NextResponse.json({ ...err, message: 'Something went wrong' }, { status: 400 })
   }
 }
