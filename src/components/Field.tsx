@@ -16,9 +16,9 @@ const Field = React.forwardRef<HTMLInputElement, FieldProps>(({ asChild, label, 
 
   return (
     <div className='flex flex-col gap-1 w-full'>
-      <label className='text-xs'>&#8203;{label}</label>
+      <label className='text-sm'>&#8203;{label}</label>
       <Comp ref={ref} {...rest} />
-      <p className='text-xs text-red-500'>&#8203;{error}</p>
+      <p className='text-sm text-red-500'>&#8203;{error}</p>
     </div>
   )
 })

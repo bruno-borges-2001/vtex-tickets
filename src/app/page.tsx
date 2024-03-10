@@ -7,7 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { SUBJECTS, TRANSACTION_STATUS } from "@/lib/consts";
 import { BaseSchema, FullSchema, baseSchema, catalogSchema, ordersSchema, paymentsSchema } from "@/lib/schemas";
 import { yupResolver } from '@hookform/resolvers/yup';
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useForm } from "react-hook-form";
 import { toast } from "sonner";
 import { ObjectSchema } from 'yup';
@@ -36,12 +36,32 @@ export default function Home() {
   const {
     register,
     handleSubmit,
+    getValues,
     setValue,
     reset,
     formState: { errors }
   } = useForm<FullSchema>({
     resolver: yupResolver(schema as ObjectSchema<FullSchema>)
   })
+
+  const resetSpecificFields = () => {
+    const { account_name, requester_email, title, subject, detailing } = getValues()
+
+    setSelectedTransactionStatus(null)
+
+    reset({
+      account_name,
+      requester_email,
+      title,
+      subject,
+      detailing,
+    })
+  }
+
+  useEffect(() => {
+    resetSpecificFields()
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedSubject])
 
   const baseFields = (
     <>
@@ -56,7 +76,7 @@ export default function Home() {
             {SUBJECTS.map(el => (
               <button
                 key={el}
-                className="text-left px-3 py-2 bg-white hover:brightness-90"
+                className="text-left px-3 py-2 bg-popover hover:brightness-90"
                 onClick={() => {
                   setValue('subject', el)
                   setSelectedSubject(el)
@@ -100,7 +120,7 @@ export default function Home() {
             {TRANSACTION_STATUS.map(el => (
               <button
                 key={el}
-                className="text-left px-3 py-2 bg-white hover:brightness-90"
+                className="text-left px-3 py-2 bg-popover hover:brightness-90"
                 onClick={() => {
                   setValue('transaction_status', el)
                   setSelectedTransactionStatus(el)
@@ -128,13 +148,6 @@ export default function Home() {
     </>
   )
 
-  const specificFields = {
-    Orders: ordersFields,
-    Payments: paymentsFields,
-    Catalog: catalogFields,
-    Others: undefined
-  }
-
   const onSubmit = handleSubmit(async (formData) => {
     const body = new FormData()
 
@@ -157,10 +170,12 @@ export default function Home() {
   })
 
   return (
-    <form onSubmit={onSubmit} className="flex flex-col gap-2 w-full max-w-xl p-6">
-      <h1 className="w-full text-center text-3xl font-bold mb-4">Submit Ticket</h1>
+    <form onSubmit={onSubmit} className="flex flex-col gap-2 w-full max-w-xl p-6 bg-card rounded-2xl shadow max-h-[calc(100vh-162px)] overflow-auto">
+      <h1 className="w-full text-center text-lg leading-none mb-4">Submit <span className="text-primary">Ticket</span></h1>
       {baseFields}
-      {selectedSubject && specificFields[selectedSubject]}
+      {selectedSubject === 'Catalog' && catalogFields}
+      {selectedSubject === 'Orders' && ordersFields}
+      {selectedSubject === 'Payments' && paymentsFields}
       <Field label="Detailing" error={errors.detailing?.message} {...register('detailing')} asChild>
         <Textarea className="resize-none" />
       </Field>
