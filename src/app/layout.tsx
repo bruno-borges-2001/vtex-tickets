@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 export default function RootLayout({ children }: Readonly<React.PropsWithChildren>) {
   return (
     <html lang="en">
-      <body suppressHydrationWarning={true} className={cn(vtexTrust.className, 'w-screen h-svh flex flex-col')}>
+      <body suppressHydrationWarning={true} className={cn(vtexTrust.className, 'w-screen h-svh flex flex-col px-[22.5px]')}>
         <main className="grow grid place-items-center">{children}</main>
         <Toaster />
         <Logo className="absolute top-[22.5px] left-[22.5px]" />
