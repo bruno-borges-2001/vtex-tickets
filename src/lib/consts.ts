@@ -6,7 +6,7 @@ export const FIELD_MAPPING = {
   'requester_email': 23668126579995,
   'subject': 23668565503003,
   'order_number': 23668201672475,
-  'is_affecting_all_users': 23668220752667,
+  'is_affecting_all_users': 23674397259035,
   'transaction_number': 23668204395419,
   'transaction_status': 23668226104347,
   'payment_acquirer': 23668226930587,

@@ -49,7 +49,7 @@ export async function POST(req: NextRequest) {
     switch (subject) {
       case 'Orders':
         custom_fields.push({ id: FIELD_MAPPING['order_number'], value: data.get('order_number') })
-        custom_fields.push({ id: FIELD_MAPPING['is_affecting_all_users'], value: data.get('is_affecting_all_users') })
+        custom_fields.push({ id: FIELD_MAPPING['is_affecting_all_users'], value: data.get('is_affecting_all_users') === 'true' ? 'affecting_all_users' : 'not_affecting_all_users' })
         break
       case 'Payments':
         custom_fields.push({ id: FIELD_MAPPING['transaction_number'], value: data.get('transaction_number') })
@@ -61,6 +61,8 @@ export async function POST(req: NextRequest) {
         break
     }
 
+    console.log(custom_fields)
+
     // create ticket object
     const ticket = {
       subject: data.get('title'),
@@ -71,6 +73,8 @@ export async function POST(req: NextRequest) {
       },
       custom_fields
     }
+
+    console.log(JSON.stringify({ ticket }))
 
     // create ticket request
     const response = await fetch(`https://${ZENDESK_SUBDOMAIN}.zendesk.com/api/v2/tickets`,
